@@ -59,7 +59,7 @@ ROOT_URLCONF = "to_do.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ["templates"],
+        "DIRS": [os.path.join(BASE_DIR, "templates")],  # Verifique este caminho
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -124,8 +124,8 @@ USE_TZ = True
 
 # Optionally, if you want to define supported languages
 LANGUAGES = [
-    ('en', 'English'),
-    ('pt-br', 'Portuguese (Brazil)'),
+    ("en", "English"),
+    ("pt-br", "Portuguese (Brazil)"),
     # Add other languages as needed
 ]
 
@@ -149,4 +149,4 @@ PUBLIC_VIEWS = [
 ]
 
 # Set the default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
