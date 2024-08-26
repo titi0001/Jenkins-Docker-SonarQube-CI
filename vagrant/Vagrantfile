@@ -1,0 +1,96 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  # Timeout para boot
+  config.vm.boot_timeout = 600  # 10 minutos
+
+  # Disksize (Este comando pode depender de plugins específicos do Vagrant e do VirtualBox)
+  # config.disksize.size = '40GB'
+
+  # Forwarded ports
+  config.vm.network "forwarded_port", guest: 81, host: 81
+  config.vm.network "forwarded_port", guest: 80, host: 80
+  config.vm.network "forwarded_port", guest: 3306, host: 3306
+  config.vm.network "forwarded_port", guest: 8080, host: 8080
+  config.vm.network "forwarded_port", guest: 9000, host: 9000
+  config.vm.network "forwarded_port", guest: 19999, host: 19999
+  config.vm.network "forwarded_port", guest: 9001, host: 9001
+
+  # Private network
+  config.vm.network "private_network", ip: "192.168.33.10"
+
+  # Provider-specific configuration for VirtualBox
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "4096"
+    vb.cpus = "4"
+  end
+
+  # Provisioning: install packages
+  config.vm.provision "shell", inline: <<-SHELL
+    sudo apt-get update && sudo apt-get install -y \
+    swapspace \
+    python-is-python3 \
+    python3-pip \
+    python3-dev \
+    libmysqlclient-dev \
+    python3-venv \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    unzip \
+    openjdk-11-jdk \
+    mysql-server
+  SHELL
+
+  # MySQL setup
+  $script_mysql = <<-SCRIPT
+    # Configurar swap
+    sudo fallocate -l 4G /swapfile
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+
+    # Ajustar permissões e iniciar MySQL
+    sudo chown -R mysql:mysql /var/lib/mysql
+    sudo chmod -R 755 /var/lib/mysql
+
+    # Criar os usuários
+    sudo mysql -e "CREATE USER 'devops'@'%' IDENTIFIED BY 'mestre';"
+    sudo mysql -e "CREATE USER 'devops_dev'@'%' IDENTIFIED BY 'mestre';"
+
+    # Criar os bancos de dados
+    sudo mysql -e "CREATE DATABASE todo;"
+    sudo mysql -e "CREATE DATABASE todo_dev;"
+    sudo mysql -e "CREATE DATABASE test_todo_dev;"
+
+    # Conceder privilégios ao usuário 'devops' para todos os bancos de dados
+    sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'devops'@'%' WITH GRANT OPTION;"
+
+    # Conceder privilégios ao usuário 'devops_dev' apenas para os bancos de dados 'todo_dev' e 'test_todo_dev'
+    sudo mysql -e "GRANT ALL PRIVILEGES ON todo_dev.* TO 'devops_dev'@'%';"
+    sudo mysql -e "GRANT ALL PRIVILEGES ON test_todo_dev.* TO 'devops_dev'@'%';"
+
+    # Atualizar privilégios
+    sudo mysql -e "FLUSH PRIVILEGES;"
+  SCRIPT
+
+  config.vm.provision "shell", inline: $script_mysql
+
+  # Copy MySQL config
+  config.vm.provision "shell", inline: "sudo cp /configs/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf"
+  config.vm.provision "shell", inline: "sudo systemctl restart mysql"
+  config.vm.provision "shell", inline: "sudo systemctl restart ssh"
+
+  config.ssh.insert_key = false
+
+  # Synced folders
+  config.vm.synced_folder "./configs", "/configs"
+  config.vm.synced_folder "./scripts", "/vagrant/scripts"
+
+  # Extra: execute docker.sh
+  config.vm.provision "shell", inline: "chmod +x /vagrant/scripts/*"
+  config.vm.provision "shell", inline: "sudo /vagrant/scripts/docker.sh"
+end
