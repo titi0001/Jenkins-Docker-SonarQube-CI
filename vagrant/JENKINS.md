@@ -1,12 +1,8 @@
-# Configurando o ambiente e conectando máquina virtual:
+# Configurando o ambiente e conectando máquina virtual
 
 ## Máquina virtual com o vagrant
 
-### Requisitos: http://vagrantup.com e https://www.virtualbox.org/
-
-#### Entendendo o Vagranfile
-
-#### Subindo o ambiente virtualizado
+### Subindo o ambiente virtualizado
 
 ```sh
 vagrant plugin install vagrant-disksize
@@ -17,17 +13,13 @@ mysql -u devops -p # Senha mestre; show databases
 mysql -u devops_dev -p # Senha mestre; show databases
 # Instalando o Jenkins
 cd /vagrant/scripts
+# Instalando o docker
+sudo ./docker.sh
 # Visualizar o conteudo do arquivo de instalacao do jenkins
 sudo ./jenkins.sh
 
 # Acessar:  192.168.33.10:8080
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-
-# Credenciais
-# Nome de usuário: alura
-# Senha: mestre123
-# Nome completo: Jenkins Alura
-# Email: aluno@alura.com.br
 
 # Reload nas permissoes do docker
 sudo usermod -aG docker $USER
