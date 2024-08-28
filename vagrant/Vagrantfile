@@ -7,9 +7,6 @@ Vagrant.configure("2") do |config|
   # Timeout para boot
   config.vm.boot_timeout = 600  # 10 minutos
 
-  # Disksize (Este comando pode depender de plugins específicos do Vagrant e do VirtualBox)
-  # config.disksize.size = '40GB'
-
   # Forwarded ports
   config.vm.network "forwarded_port", guest: 81, host: 81
   config.vm.network "forwarded_port", guest: 80, host: 80
@@ -79,18 +76,30 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: $script_mysql
 
-  # Copy MySQL config
-  config.vm.provision "shell", inline: "sudo cp /configs/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf"
-  config.vm.provision "shell", inline: "sudo systemctl restart mysql"
-  config.vm.provision "shell", inline: "sudo systemctl restart ssh"
+  # Ensure synced folders are ready before copying MySQL config
+  config.vm.provision "shell", inline: <<-SHELL
+    if [ -f /configs/mysqld.cnf ]; then
+      sudo cp /configs/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf
+      sudo systemctl restart mysql
+    else
+      echo "mysqld.cnf not found, skipping copy."
+    fi
+    sudo systemctl restart ssh
+  SHELL
 
+  # SSH key insertion (optional: remove this line if you want Vagrant to manage SSH keys automatically)
   config.ssh.insert_key = false
 
   # Synced folders
   config.vm.synced_folder "./configs", "/configs"
   config.vm.synced_folder "./scripts", "/vagrant/scripts"
 
-  # Extra: execute docker.sh
-  config.vm.provision "shell", inline: "chmod +x /vagrant/scripts/*"
-  config.vm.provision "shell", inline: "sudo /vagrant/scripts/docker.sh"
+  # Execute custom scripts after setup
+  config.vm.provision "shell", inline: <<-SHELL
+    chmod +x /vagrant/scripts/*
+    sudo /vagrant/scripts/docker.sh
+  SHELL
+
+  # Remove the vagrant home directory (this is potentially unsafe, review this necessity)
+  # config.vm.provision "shell", inline: "sudo rm -rf /home/vagrant/"
 end
